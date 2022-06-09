@@ -1,0 +1,6 @@
+access_key=""
+secret_key=""
+region=""
+sonar_repository = "https://oteemo.github.io/charts"
+sonar_chart      = "oteemocharts"
+sonar_namespace  = "tooling"
