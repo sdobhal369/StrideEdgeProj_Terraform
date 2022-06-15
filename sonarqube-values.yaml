@@ -485,8 +485,8 @@ extraConfig:
   secrets: []
   configmaps: []
 
- account:
-   adminPassword: Admin@123
+account:
+  adminPassword: Pass@123
 #   currentAdminPassword: admin
 #   securityContext: {}
 #   resources:
