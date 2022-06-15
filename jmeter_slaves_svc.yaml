@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: jmeter-slaves-svc
+  namespace: jmeter
   labels:
     jmeter_mode: slave
 spec:
