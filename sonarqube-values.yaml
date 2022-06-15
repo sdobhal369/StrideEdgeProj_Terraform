@@ -23,15 +23,14 @@ OpenShift:
   enabled: false
   createSCC: true
 
-edition: "community"
-
 image:
   repository: sonarqube
-  tag: 9.3.0-{{ .Values.edition }}
+  tag: 8.9.8-community
   pullPolicy: IfNotPresent
   # If using a private repository, the imagePullSecrets to use
   # pullSecrets:
   #   - name: my-repo-secret
+
 
 # Set security context for sonarqube pod
 securityContext:
