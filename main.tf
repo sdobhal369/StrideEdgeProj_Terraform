@@ -6,7 +6,10 @@ resource "null_resource" "script_check" {
 
  provisioner "local-exec" {
     
-    command = "/bin/bash script.sh"
+    command = <<EOT
+        bash script.sh
+        kubectl expose service sonarqube-sonarqube -n sonarqube --type=NodePort --target-port=9000 --name=sonarqube
+   EOT     
   }
 }
 
