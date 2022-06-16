@@ -6,32 +6,6 @@ helm_status_2=$(helm status sonatype-nexus -n nexus -o json | jq .status.phase -
 
 kubernetes_status=$(kubectl get namespace jmeter -o json | jq .status.phase -r) 
 
-## Checking if Helm files are Present
-
-if [[ $helm_status_1 == "null" && $helm_status_2 == "null" ]]
-
-then
-
-    echo "Helm Files are already present. Hence removing..."
-    
-    kubectl delete namespace sonarqube
-    kubectl delete namespace nexus
-    helm repo remove oteemocharts
-    helm repo update
-
-else
-
-    echo "Creating Helm Files..."
-    
-    helm repo add oteemocharts https://oteemo.github.io/charts
-    helm repo update
-    kubectl create namespace sonarqube
-    kubectl create namespace nexus    
-    helm install sonarqube oteemocharts/sonarqube -f sonarqube-values.yaml --namespace=sonarqube
-    helm install sonatype-nexus oteemocharts/sonatype-nexus -f nexus-values.yaml --namespace=nexus
-
-fi
-
 ## Checking if Kubernetes files are Present
 
 
@@ -55,3 +29,30 @@ else
     kubectl apply -f jmeter_slaves_svc.yaml
 
 fi
+
+## Checking if Helm files are Present
+
+if [[ $helm_status_1 == "null" && $helm_status_2 == "null" ]]
+
+then
+
+    echo "Helm Files are already present. Hence removing..."
+    
+    kubectl delete namespace sonarqube
+    kubectl delete namespace nexus
+    helm repo remove oteemocharts
+    helm repo update
+
+else
+
+    echo "Creating Helm Files..."
+    
+    helm repo add oteemocharts https://oteemo.github.io/charts
+    helm repo update
+    kubectl create namespace sonarqube
+    kubectl create namespace nexus    
+    helm install sonarqube oteemocharts/sonarqube -n sonarqube
+    helm install sonatype-nexus oteemocharts/sonatype-nexus -n nexus
+
+fi
+
