@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: starterkit-deploy
+  namespace: brigade
+  labels:
+    app: squad-hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: squad-hub
+  template:
+    metadata:
+      labels:
+        app: squad-hub
+    spec:
+      imagePullSecrets:
+      - name: regcred
+      containers:
+      - name: starter-kit
+        image: sdobhal369/boilerplate:latest
+        env:          
+        - name: NODE_ENV
+          value: "dev"
+        - name: PORT
+          value: "7000"
+        - name: MONGO_URL
+          value: "mongodb://mongo-svc:27017/users-exp-boiler?keepAlive=true&socketTimeoutMS=360000&connectTimeoutMS=360000"
+        - name: AUTH_ACTIVE
+          value: "false"
+        - name: REDIS_HOST
+          value: "redis-svc.brigade.svc.cluster.local"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: SECRET_KEY
+          value: "adasHUsfsdfkdsdfsd"
+        ports:
+        - containerPort: 7000
