@@ -13,7 +13,7 @@ const dest = '/mnt/brigade/share';
 
 // Triggers the event
 
-events.on('push', (e, project) => {
+events.on('exec', (e, project) => {
 
 
 // Job for Installing Application Dependency
@@ -76,13 +76,7 @@ events.on('push', (e, project) => {
             -Dsonar.projectKey=$SONAR_PROJ_KEY \
             -Dsonar.host.url=$SONAR_URL \
             -Dsonar.login=$SONAR_AUTH \
-            -Dsonar.sources=. \
-            -Dsonar.test.inclusions=src/**/*.ts \
-            -Dsonar.exclusions=src/entities/*.ts,src/index.ts,src/**/*.test.ts,src/**/*.spec.ts \
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-            -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
-            -Dsonar.sourceEncoding=UTF-8'
-        
+            -Dsonar.sources=.'        
     ];
 
 
