@@ -1,6 +1,6 @@
 const { events, Job, Group } = require('brigadier');
 
-const nodeImage = 'node:14-alpine';
+const nodeImage = 'node:14';
 
 const sonarCliImage = 'sonarsource/sonar-scanner-cli';
 
@@ -10,17 +10,19 @@ const kubectlImage = 'bitnami/kubectl';
 
 const dest = '/mnt/brigade/share';
 
+
 // Triggers the event
 
 events.on('push', (e, project) => {
 
-    // Job for Installing Application Dependency
 
-    const buildJob = new Job('dependency-installation', nodeImage);
+// Job for Installing Application Dependency
 
-    buildJob.env = {
+    const npmJob = new Job('npm-build-test', nodeImage);
 
-        // Place these Nexus credentials while creating brigade project
+    npmJob.env = {
+
+// Place these Nexus credentials while creating brigade project
 
         NEXUS_AUTH: project.secrets.nexusAuth,
         NEXUS_EMAIL: project.secrets.nexusEmail,
@@ -28,11 +30,17 @@ events.on('push', (e, project) => {
 
     };
 
-    buildJob.tasks = [
+    npmJob.tasks = [
 
+        'set -x',
         'cd /src',
-
-        // Configuring Nexus Repo with Npm
+        'mv .env.sample .env',
+        'cd ..',
+        'tar -cvzf js-package.tar.gz src/',
+        `tar -xvf js-package.tar.gz -C ${dest}`,
+        `cd ${dest}/src`,
+        
+// Configuring Nexus Repo with Npm
 
         'npm config set loglevel verbose',
         'npm config set registry $NEXUS_REGISTRY',
@@ -40,66 +48,45 @@ events.on('push', (e, project) => {
         'npm config set email $NEXUS_EMAIL',
         'npm config set always-auth true',
         'npm install',
-        'npm run build',
-        'cd ..',
-        'tar -cvzf js-package.tar.gz src/',
-        `mv js-package.tar.gz ${dest}`,
-        `cd ${dest}`,
-        'tar -xvf js-package.tar.gz',
-        'rm -rf js-package.tar.gz',
-        'cd /src',
-        `mv .env.sample ${dest}/src/.env`
+        'npm run lint:fix',
+        'npm run test:c'
 
     ];
 
-    // Job for Application Unit Test
 
-    // var unitTestJob = new Job('unit-test', nodeImage);
+// Job for Sonarqube
 
-    // unitTestJob.timeout= 3600000;
+    const sonarJob = new Job('sonarqube', sonarCliImage);
 
-    // unitTestJob.tasks = [
+    sonarJob.env = {
 
-    //   `cd ${dest}/src`,
-    //   'ls -lart',
-    //   'npm run lint:fix',
-    //   'npm run test:c || true'
+// Place these Sonarqube while creating brigade project
 
-    // ];
+        SONAR_AUTH: project.secrets.sonarAuth,
+        SONAR_PROJ_KEY: project.secrets.sonarKey,
+        SONAR_URL: project.secrets.sonarUrl
 
-    // Job for Sonarqube
+    }
 
-    // var sonarJob = new Job('sonarqube', sonarCliImage);
+    sonarJob.tasks = [
 
-    // sonarJob.env = {
+         'set -x',
+         `cd ${dest}/src`,
+         'sonar-scanner \
+            -Dsonar.projectKey=$SONAR_PROJ_KEY \
+            -Dsonar.host.url=$SONAR_URL \
+            -Dsonar.login=$SONAR_AUTH \
+            -Dsonar.sources=. \
+            -Dsonar.test.inclusions=src/**/*.ts \
+            -Dsonar.exclusions=src/entities/*.ts,src/index.ts,src/**/*.test.ts,src/**/*.spec.ts \
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
+            -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
+            -Dsonar.sourceEncoding=UTF-8'
+        
+    ];
 
-    // Place these Sonarqube while creating brigade project
 
-    //   SONAR_AUTH: project.secrets.sonarAuth,
-    //   SONAR_PROJ_KEY: project.secrets.sonarKey,
-    //   SONAR_URL: project.secrets.sonarUrl,
-    //   SONAR_BRANCH: project.secrets.sonarBranch
-
-    // }
-
-    // sonarJob.tasks = [
-
-    //  `cd ${dest}/src`,
-    //  'sonar-scanner \
-    //     -Dsonar.branch.name=$SONAR_BRANCH \
-    //     -Dsonar.projectKey=$SONAR_PROJ_KEY \
-    //     -Dsonar.sources=. \
-    //     -Dsonar.test.inclusions=src/**/*.ts \
-    //     -Dsonar.exclusions=src/entities/*.ts,src/index.ts,src/**/*.test.ts,src/**/*.spec.ts \
-    //     -Dsonar.host.url=$SONAR_URL \
-    //     -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
-    //     -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
-    //     -Dsonar.testExecutionReportPaths=coverage/test-reporter.xml \
-    //     -Dsonar.login=$SONAR_AUTH || true'
-
-    // ];
-
-    // Job for Docker Build & Push
+// Job for Docker Build & Push
 
     const dockerPack = new Job('docker-packaging', dockerImage);
 
@@ -109,7 +96,7 @@ events.on('push', (e, project) => {
 
         DOCKER_DRIVER: 'overlay',
 
-        // Place these Docker credentials while creating brigade project
+// Place these Docker credentials while creating brigade project
 
         DOCKER_USER: project.secrets.dockerUser,
         DOCKER_PASS: project.secrets.dockerPass,
@@ -124,11 +111,12 @@ events.on('push', (e, project) => {
         `cd ${dest}/src`,
         'docker build -t $DOCKER_REGISTRY:latest .',             // Replace with your own image tag
         'docker login -u $DOCKER_USER -p $DOCKER_PASS',          // Login to Dockerhub
-        'docker push $DOCKER_REGISTRY:latest'                   // Replace with your own image tag
+        'docker push $DOCKER_REGISTRY:latest'                    // Replace with your own image tag
 
     ];
 
-    // Job for Deploying Application On Minikube
+
+// Job for Deploying Application On Minikube
 
     const deployJob = new Job('deploy-application', kubectlImage);
 
@@ -136,7 +124,7 @@ events.on('push', (e, project) => {
 
         `cd ${dest}/src/Deployment`,
 
-        // Applying yaml file
+// Applying yaml file
 
         'kubectl apply -f mongo_deploy.yaml',
         'kubectl apply -f mongo_svc.yaml',
@@ -148,15 +136,15 @@ events.on('push', (e, project) => {
 
     ];
 
-    // Shared Storage for all Jobs
 
-    buildJob.storage.enabled = true;
-    // unitTestJob.storage.enabled = true;
-    // sonarJob.storage.enabled = true;
+// Shared Storage for all Jobs
+
+    npmJob.storage.enabled = true;
+    sonarJob.storage.enabled = true;
     dockerPack.storage.enabled = true;
     deployJob.storage.enabled = true;
 
-    Group.runEach([buildJob, dockerPack, deployJob]);
-    // Group.runEach([buildJob, unitTestJob, sonarJob, dockerPack, deployJob]);
+
+    Group.runEach([npmJob, sonarJob, dockerPack, deployJob]);
 
 });
