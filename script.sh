@@ -8,7 +8,7 @@ kubernetes_status_2=$(kubectl get namespace nexus -o json | jq .status.phase -r)
 
 ## Checking if Helm files are Present
 
-if [[ $helm_status_1 == "null" ]]
+if [[ $helm_status == "null" ]]
 
 then
 
