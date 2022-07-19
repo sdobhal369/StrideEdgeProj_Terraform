@@ -1,12 +1,10 @@
 #!bin/sh
 
 
+## Checking if Helm files are Present
+
 helm_status=$(helm status sonarqube -n sonarqube -o json | jq .status.phase -r)
 
-kubernetes_status_1=$(kubectl get namespace jmeter -o json | jq .status.phase -r) 
-kubernetes_status_2=$(kubectl get namespace nexus -o json | jq .status.phase -r)
-
-## Checking if Helm files are Present
 
 if [[ $helm_status == "null" ]]
 
@@ -30,6 +28,9 @@ else
 fi
 
 ## Checking if Kubernetes files are Present
+
+kubernetes_status_1=$(kubectl get namespace jmeter -o json | jq .status.phase -r) 
+kubernetes_status_2=$(kubectl get namespace nexus -o json | jq .status.phase -r)
 
 
 if [[ $kubernetes_status_1 == "Active" && $kubernetes_status_2 == "Active" ]]
